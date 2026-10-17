@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: prod_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-photography_saas}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: prod_redis
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ai:
+    build:
+      context: .
+      dockerfile: dockerfiles/ai.Dockerfile
+    container_name: prod_ai
+    env_file: .env.production
+    ports:
+      - '8000:8000'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  api:
+    build:
+      context: .
+      dockerfile: dockerfiles/api.Dockerfile
+    container_name: prod_api
+    env_file: .env.production
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: dockerfiles/web.Dockerfile
+    container_name: prod_web
+    env_file: .env.production
+    ports:
+      - '4000:4000'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4000']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+    name: prod_postgres_data
+  redis_data:
+    name: prod_redis_data

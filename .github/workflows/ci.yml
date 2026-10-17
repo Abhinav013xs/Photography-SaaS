@@ -1,0 +1,94 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Lint, Typecheck, Test & Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: photography_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/ai/requirements.txt
+
+      - name: Linting
+        run: npm run lint
+
+      - name: Type Checking
+        run: npm run typecheck
+
+      - name: Validate Environment Config
+        run: npm run env:validate
+
+      - name: Run Automated Tests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/photography_saas_test
+          REDIS_URL: redis://localhost:6379
+          AUTH_SECRET: test_secret_key_minimum_32_characters_for_ci_pipeline
+        run: npm test
+
+      - name: Production Web & Workspace Build
+        run: npm run build
+
+      - name: Production Client SPA Build
+        run: npm --prefix client run build
+
+      - name: Test Database Backup & Restore Pipeline
+        run: |
+          npx tsx scripts/backup-db.ts --output backups/ci_test_backup.json
+          npx tsx scripts/restore-db.ts --input backups/ci_test_backup.json
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Playwright Smoke & Regression
+        run: npm run test:e2e

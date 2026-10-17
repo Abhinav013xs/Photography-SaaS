@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+:root {
+  /* Design Tokens from docs/DESIGN_SYSTEM.md */
+  --bg-canvas: #0a0b0d;
+  --bg-panel: #111316;
+  --bg-card: #14171b;
+  --bg-input: #121418;
+
+  --border-subtle: #20242a;
+  --border-medium: #2c323b;
+  --border-highlight: #3a424e;
+
+  --accent-bronze: #c5a059;
+  --accent-bronze-subtle: rgba(197, 160, 89, 0.12);
+  --accent-bronze-hover: #d4b26f;
+
+  --status-success: #2ec4b6;
+  --status-warning: #e76f51;
+  --status-danger: #e63946;
+
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editorial Typography Primitives */
+.font-display {
+  font-family: var(--font-serif);
+}
+
+.text-bronze {
+  color: var(--accent-bronze);
+}
+
+.bg-canvas {
+  background-color: var(--bg-canvas);
+}
+
+.bg-panel {
+  background-color: var(--bg-panel);
+}
+
+.bg-card {
+  background-color: var(--bg-card);
+}
+
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+
+.border-medium {
+  border-color: var(--border-medium);
+}
+
+/* Accessibility Focus States */
+:focus-visible {
+  outline: 2px solid var(--accent-bronze);
+  outline-offset: 2px;
+}
+
+/* Subtle Shimmer Skeleton Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #14171b 25%,
+    #1c2026 50%,
+    #14171b 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite ease-in-out;
+}
+
+/* Custom Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0b0d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #20242a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2c323b;
+}
